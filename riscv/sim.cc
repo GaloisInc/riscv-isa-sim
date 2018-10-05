@@ -23,13 +23,16 @@ static void handle_signal(int sig)
   signal(sig, &handle_signal);
 }
 
-sim_t::sim_t(const char* isa, size_t nprocs, bool halted, reg_t start_pc,
+sim_t::sim_t(const char* isa, size_t nprocs, uint64_t cpu_hz,
+	     bool halted, reg_t start_pc,
              std::vector<std::pair<reg_t, mem_t*>> mems,
              const std::vector<std::string>& args,
              std::vector<int> const hartids, unsigned progsize,
              unsigned max_bus_master_bits, bool require_authentication)
   : htif_t(args), mems(mems), procs(std::max(nprocs, size_t(1))),
-    start_pc(start_pc), current_step(0), current_proc(0), debug(false),
+    start_pc(start_pc),
+    cpu_hz(cpu_hz),
+    current_step(0), current_proc(0), debug(false),
     remote_bitbang(NULL),
     debug_module(this, progsize, max_bus_master_bits, require_authentication)
 {
@@ -59,6 +62,9 @@ sim_t::sim_t(const char* isa, size_t nprocs, bool halted, reg_t start_pc,
 
   clint.reset(new clint_t(procs));
   bus.add_device(CLINT_BASE, clint.get());
+
+  ttyS0 = new uart_t(procs[0]);
+  bus.add_device(UART_BASE, ttyS0);
 }
 
 sim_t::~sim_t()
@@ -112,6 +118,7 @@ void sim_t::step(size_t n)
       if (++current_proc == procs.size()) {
         current_proc = 0;
         clint->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
+        ttyS0->tick();
       }
 
       host->switch_to();
@@ -271,7 +278,7 @@ void sim_t::make_dtb()
          "  cpus {\n"
          "    #address-cells = <1>;\n"
          "    #size-cells = <0>;\n"
-         "    timebase-frequency = <" << (CPU_HZ/INSNS_PER_RTC_TICK) << ">;\n";
+         "    timebase-frequency = <" << (cpu_hz/INSNS_PER_RTC_TICK) << ">;\n";
   for (size_t i = 0; i < procs.size(); i++) {
     s << "    CPU" << i << ": cpu@" << i << " {\n"
          "      device_type = \"cpu\";\n"
@@ -280,7 +287,7 @@ void sim_t::make_dtb()
          "      compatible = \"riscv\";\n"
          "      riscv,isa = \"" << procs[i]->get_isa_string() << "\";\n"
          "      mmu-type = \"riscv," << (procs[i]->get_max_xlen() <= 32 ? "sv32" : "sv48") << "\";\n"
-         "      clock-frequency = <" << CPU_HZ << ">;\n"
+         "      clock-frequency = <" << (cpu_hz/INSNS_PER_RTC_TICK) << ">;\n"
          "      CPU" << i << "_intc: interrupt-controller {\n"
          "        #interrupt-cells = <1>;\n"
          "        interrupt-controller;\n"
@@ -314,8 +321,14 @@ void sim_t::make_dtb()
                      " 0x" << (clintsz >> 32) << " 0x" << (clintsz & (uint32_t)-1) << ">;\n"
          "    };\n"
          "  };\n"
-         "  htif {\n"
-         "    compatible = \"ucb,htif0\";\n"
+         //"  htif {\n"
+         //"    compatible = \"ucb,htif0\";\n"
+         //"  };\n"
+         "  uart@" << UART_BASE << " {\n"
+         "    compatible = \"ns16550a\";\n"
+         "    reg = <0x0 0x" << UART_BASE << " 0x0 0x8>;\n"
+         "    reg-shift = <3>;\n"
+         "    clock-frequency = <" << std::dec << (cpu_hz/INSNS_PER_RTC_TICK) << std::hex << ">;\n"
          "  };\n"
          "};\n";
 
