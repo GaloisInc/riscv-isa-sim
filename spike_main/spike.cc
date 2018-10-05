@@ -35,7 +35,9 @@ static void help()
   fprintf(stderr, "  --extension=<name>    Specify RoCC Extension\n");
   fprintf(stderr, "  --extlib=<name>       Shared library to load\n");
   fprintf(stderr, "  --rbb-port=<port>     Listen on <port> for remote bitbang connection\n");
+  fprintf(stderr, "  --ttyS0=<link>        Symbolic link to ttyS0 pty\n");
   fprintf(stderr, "  --dump-dts  Print device tree string and exit\n");
+  fprintf(stderr, "  --hz=<hz>\n");
   exit(1);
 }
 
@@ -85,6 +87,8 @@ int main(int argc, char** argv)
   const char* isa = DEFAULT_ISA;
   uint16_t rbb_port = 0;
   bool use_rbb = false;
+  const char* ttyS0_link = "";
+  uint64_t cpu_hz = 1000000000llu;
   std::vector<int> hartids;
 
   auto const hartids_parser = [&](const char *s) {
@@ -125,13 +129,15 @@ int main(int argc, char** argv)
       exit(-1);
     }
   });
+  parser.option(0, "ttyS0", 1, [&](const char* s){ttyS0_link = s;});
+  parser.option(0, "hz", 1, [&](const char* s){printf("s = %s\n", s); printf ("i = %" PRId64 "\n", strtoul(s, NULL, 10)); cpu_hz = strtoul(s, NULL, 10);});
 
   auto argv1 = parser.parse(argv);
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
   if (mems.empty())
     mems = make_mems("2048");
 
-  sim_t s(isa, nprocs, halted, start_pc, mems, htif_args, std::move(hartids));
+  sim_t s(isa, nprocs, cpu_hz, halted, start_pc, mems, htif_args, std::move(hartids));
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(new jtag_dtm_t(&s.debug_module));
   if (use_rbb) {
@@ -159,5 +165,6 @@ int main(int argc, char** argv)
   s.set_debug(debug);
   s.set_log(log);
   s.set_histogram(histogram);
+  s.set_ttyS0(ttyS0_link);
   return s.run();
 }

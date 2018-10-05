@@ -6,6 +6,7 @@
 #include "processor.h"
 #include "devices.h"
 #include "debug_module.h"
+#include "uart.h"
 #include <fesvr/htif.h>
 #include <fesvr/context.h>
 #include <vector>
@@ -19,7 +20,8 @@ class remote_bitbang_t;
 class sim_t : public htif_t
 {
 public:
-  sim_t(const char* isa, size_t _nprocs,  bool halted, reg_t start_pc,
+  sim_t(const char* isa, size_t _nprocs, uint64_t cpu_hz,
+	bool halted, reg_t start_pc,
         std::vector<std::pair<reg_t, mem_t*>> mems,
         const std::vector<std::string>& args, const std::vector<int> hartids);
   ~sim_t();
@@ -30,6 +32,7 @@ public:
   void set_log(bool value);
   void set_histogram(bool value);
   void set_procs_debug(bool value);
+  void set_ttyS0(const char* link) { ttyS0->create_link(link); }
   void set_remote_bitbang(remote_bitbang_t* remote_bitbang) {
     this->remote_bitbang = remote_bitbang;
   }
@@ -48,12 +51,13 @@ private:
   std::unique_ptr<rom_device_t> boot_rom;
   std::unique_ptr<clint_t> clint;
   bus_t bus;
+  uart_t* ttyS0;
 
   processor_t* get_core(const std::string& i);
   void step(size_t n); // step through simulation
   static const size_t INTERLEAVE = 5000;
   static const size_t INSNS_PER_RTC_TICK = 100; // 10 MHz clock for 1 BIPS core
-  static const size_t CPU_HZ = 1000000000; // 1GHz CPU
+  uint64_t cpu_hz;
   size_t current_step;
   size_t current_proc;
   bool debug;
