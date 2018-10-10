@@ -44,6 +44,8 @@ class mem_t : public abstract_device_t {
     if (!size)
       throw std::runtime_error("zero bytes of target memory requested");
     data = (char*)calloc(1, size);
+    memset(data, 0xa, size); // set memory to 0xa
+    //void * memset ( void * ptr, int value, size_t num );
     if (!data)
       throw std::runtime_error("couldn't allocate " + std::to_string(size) + " bytes of target memory");
   }
