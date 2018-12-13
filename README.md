@@ -184,7 +184,7 @@ Open On-Chip Debugger 0.10.0-dev-00002-gc3b344d (2017-06-08-12:14)
 riscv.cpu: target state: halted
 ```
 
-In yet another shell, start your gdb debug session:
+In yet another shell, start your gdb debug session, and connect to OpenOCD:
 ```
 tnewsome@compy-vm:~/SiFive/spike-test$ riscv64-unknown-elf-gdb rot13-64
 GNU gdb (GDB) 7.12.50.20170505-git
