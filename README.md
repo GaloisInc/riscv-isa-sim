@@ -1,17 +1,14 @@
-RISC-V ISA Simulator
-======================
-
-Author  : Andrew Waterman, Yunsup Lee
-
-Date    : June 19, 2011
-
-Version : (under version control)
+Spike RISC-V ISA Simulator
+============================
 
 About
 -------------
 
-The RISC-V ISA Simulator implements a functional model of one or more
+Spike, the RISC-V ISA Simulator, implements a functional model of one or more
 RISC-V processors.
+
+Spike is named after the golden spike used to celebrate the completion of the
+US transcontinental railway.
 
 Build Steps
 ---------------
@@ -51,10 +48,11 @@ Adding an instruction to the simulator requires two steps:
 
   2.  Add the opcode and opcode mask to riscv/opcodes.h.  Alternatively,
       add it to the riscv-opcodes package, and it will do so for you:
-
+        ```
          $ cd ../riscv-opcodes
          $ vi opcodes       // add a line for the new instruction
          $ make install
+        ```
 
   3.  Rebuild the simulator.
 

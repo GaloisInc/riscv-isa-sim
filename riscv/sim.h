@@ -6,7 +6,11 @@
 #include "processor.h"
 #include "devices.h"
 #include "debug_module.h"
+<<<<<<< HEAD
 #include "uart.h"
+=======
+#include "simif.h"
+>>>>>>> master
 #include <fesvr/htif.h>
 #include <fesvr/context.h>
 #include <vector>
@@ -15,19 +19,6 @@
 
 class mmu_t;
 class remote_bitbang_t;
-
-// this is the interface to the simulator used by the processors and memory
-class simif_t
-{
-public:
-  // should return NULL for MMIO addresses
-  virtual char* addr_to_mem(reg_t addr) = 0;
-  // used for MMIO addresses
-  virtual bool mmio_load(reg_t addr, size_t len, uint8_t* bytes) = 0;
-  virtual bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes) = 0;
-  // Callback for processors to let the simulation know they were reset.
-  virtual void proc_reset(unsigned id) = 0;
-};
 
 // this class encapsulates the processors and memory in a RISC-V machine.
 class sim_t : public htif_t, public simif_t
@@ -46,7 +37,13 @@ public:
   void set_log(bool value);
   void set_histogram(bool value);
   void set_procs_debug(bool value);
+<<<<<<< HEAD
   void set_ttyS0(const char* link) { ttyS0->create_link(link); }
+=======
+  void set_dtb_enabled(bool value) {
+    this->dtb_enabled = value;
+  }
+>>>>>>> master
   void set_remote_bitbang(remote_bitbang_t* remote_bitbang) {
     this->remote_bitbang = remote_bitbang;
   }
@@ -78,6 +75,7 @@ private:
   bool debug;
   bool log;
   bool histogram_enabled; // provide a histogram of PCs
+  bool dtb_enabled;
   remote_bitbang_t* remote_bitbang;
 
   // memory-mapped I/O routines
@@ -102,7 +100,9 @@ private:
   void interactive_pc(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_mem(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_str(const std::string& cmd, const std::vector<std::string>& args);
-  void interactive_until(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_until(const std::string& cmd, const std::vector<std::string>& args, bool noisy);
+  void interactive_until_silent(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_until_noisy(const std::string& cmd, const std::vector<std::string>& args);
   reg_t get_reg(const std::vector<std::string>& args);
   freg_t get_freg(const std::vector<std::string>& args);
   reg_t get_mem(const std::vector<std::string>& args);
